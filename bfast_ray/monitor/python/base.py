@@ -93,8 +93,9 @@ class BFASTMonitorPython(BFASTMonitorBase):
                  level=0.05,
                  period=10,
                  verbose=0,
-                 use_mp=False,
-                 use_gpu= False
+                 use_ray=False,
+                 cluster_address=None,
+                 ray_remote_args = {}
                  ):
         super().__init__(start_monitor,
                          freq,
@@ -106,8 +107,9 @@ class BFASTMonitorPython(BFASTMonitorBase):
                          verbose=verbose)
 
         self._timers = {}
-        self.use_mp = use_mp
-        self.use_gpu = use_gpu
+        self.use_ray = use_ray
+        self.cluster_address = cluster_address
+        self.ray_remote_args = ray_remote_args
 
 
     def fit(self, data, dates, n_chunks=None, nan_value=0):
@@ -154,7 +156,7 @@ class BFASTMonitorPython(BFASTMonitorBase):
         # period = data.shape[0] / float(self.n)
         self.lam = compute_lam(data.shape[0], self.hfrac, self.level, self.period) # lambda 
 
-        if self.use_mp: 
+        if self.use_ray: 
             # print("Python backend is running in parallel using {} threads".format(mp.cpu_count()))
             # y = np.transpose(data, (1, 2, 0)).reshape(data.shape[1] * data.shape[2], data.shape[0])
             # pool = mp.Pool(mp.cpu_count())
@@ -184,6 +186,8 @@ class BFASTMonitorPython(BFASTMonitorBase):
 
             # ds_chunk =ray.data.from_numpy(reshaped_chunk) 
 
+            ray.init(address=self.cluster_address)
+
             ds_chunk =ray.data.from_items( [{"index": np.uint64(i), 'data':transposed_data[i, :]} for i in range(transposed_data.shape[0])])
 
             # def parallel_function(batch):
@@ -206,7 +210,7 @@ class BFASTMonitorPython(BFASTMonitorBase):
                 return batch
 
 
-            result_dataset = ds_chunk.map_batches(parallel_function) 
+            result_dataset = ds_chunk.map_batches(parallel_function,**self.ray_remote_args) 
             rs_dataset = result_dataset.sort('index')
 
             result_data = rs_dataset.to_numpy_refs() # 

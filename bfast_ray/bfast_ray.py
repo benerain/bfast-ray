@@ -98,11 +98,9 @@ class BFASTMonitor():
             level=0.05,
             period=10,
             verbose=0,
-            backend="opencl",
-            platform_id=0,
-            device_id=0,
-            detailed_results=False,
-            find_magnitudes=True,
+            backend='python-ray',
+            cluster_address = None,
+            ray_remote_args = {}    
         ):
         self.start_monitor = start_monitor
         self.freq = freq
@@ -113,11 +111,9 @@ class BFASTMonitor():
         self.period = period
         self.verbose = verbose
         self.backend = backend
-        self.platform_id = platform_id
-        self.device_id = device_id
-        self.detailed_results = detailed_results
-        self.find_magnitudes = find_magnitudes
-
+        self.cluster_address = cluster_address
+        self.ray_remote_args = ray_remote_args
+        
     def fit(self, data, dates, n_chunks=None, nan_value=0):
         """ Fits the models for the ndarray 'data'
 
@@ -164,7 +160,9 @@ class BFASTMonitor():
                  level=self.level,
                  period=self.period,
                  verbose=self.verbose,
-                 use_mp=True
+                 use_ray= True,
+                 cluster_address = self.cluster_address,
+                 ray_remote_args = self.ray_remote_args
                 )
 
         # elif self.backend == 'opencl':
