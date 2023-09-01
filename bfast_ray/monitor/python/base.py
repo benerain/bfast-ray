@@ -185,8 +185,8 @@ class BFASTMonitorPython(BFASTMonitorBase):
             # reshaped_chunk = [array.reshape(-1, 216) for array in chunks]
 
             # ds_chunk =ray.data.from_numpy(reshaped_chunk) 
-
-            ray.init(address=self.cluster_address)
+            if self.cluster_address is not None:
+                ray.init(address=self.cluster_address)
 
             ds_chunk =ray.data.from_items( [{"index": np.uint64(i), 'data':transposed_data[i, :]} for i in range(transposed_data.shape[0])])
 
